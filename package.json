@@ -1,0 +1,26 @@
+{
+  "name": "simotwet-coffee-society",
+  "version": "1.0.0",
+  "description": "Simotwet Coffee Society platform managing user coffee deposits, generated receipts, and SMS reports",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build:client": "npm run build --workspace=client",
+    "build:server": "npm run build --workspace=server",
+    "build": "npm run build:client && npm run build:server && npm run prepare-dist",
+    "prepare-dist": "rm -rf dist && mkdir -p dist/client dist/server && rm -rf dist/server/uploads && mkdir -p dist/server/uploads && cp -R client/dist/* dist/client/ 2>/dev/null || : && cp -R server/dist/* dist/server/ 2>/dev/null || : && cp server/package.json dist/server/",
+    "start": "pm2 start ecosystem.config.js",
+    "stop": "pm2 stop ecosystem.config.js",
+    "seed:admin": "node server/create_admin.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
