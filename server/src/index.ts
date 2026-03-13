@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 import express from 'express';
 import cors from 'cors';
@@ -50,11 +50,13 @@ app.use('/uploads', express.static(uploadsPath));
 
 // Production: Serve static client files
 if (process.env.NODE_ENV === 'production') {
-  const clientPath = path.join(__dirname, '../../client');
+  // In production, when running from dist/server/index.js,
+  // the client files are located in ../client
+  const clientPath = path.join(__dirname, '../client');
   app.use(express.static(clientPath));
   
-  // Catch-all for SPA routing
-  app.get('*', (req, res) => {
+  // Catch-all for SPA routing - Express 5 requires specific syntax for wildcards
+  app.get('{/*path}', (req: express.Request, res: express.Response) => {
     if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
       res.sendFile(path.join(clientPath, 'index.html'));
     }

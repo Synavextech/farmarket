@@ -78,6 +78,8 @@ router.post('/', middleware_1.requireAuth, middleware_1.requireAdmin, (req, res)
                 message: `Deposit ${weight_kg}kg SMS`,
                 status: smsStatus
             }]);
+        // Log administrative action
+        yield (0, db_1.logActivity)(operator_id, 'CREATE_DEPOSIT', { deposit_id: deposit.id, user_id, weight_kg });
         return res.status(201).json({
             message: 'Deposit logged successfully',
             deposit,

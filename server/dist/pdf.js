@@ -80,6 +80,12 @@ const generatePdfReceipt = (depositData) => __awaiter(void 0, void 0, void 0, fu
             doc.moveDown(2);
             doc.fillColor('#3f3f46').fontSize(10).font('Helvetica-Bold').text('NOTES:', 70, doc.y);
             doc.font('Helvetica').text(depositData.notes || 'No additional notes.', 70, doc.y + 2, { width: 460 });
+            doc.moveDown(4);
+            doc.strokeColor('#f97316').lineWidth(0.5).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown(1);
+            doc.fontSize(10).fillColor('#f97316').font('Helvetica-Bold').text('RECORD SUMMARY & AUTHENTICATION', 50, doc.y);
+            doc.moveDown(0.5);
+            doc.fontSize(8).fillColor('#71717a').font('Helvetica').text('This receipt confirms the digital entry in our immutable ledger. No password is required to view this document. Your total lifetime deposits are tracked in real-time.', { width: 480 });
             doc.moveDown(3);
             doc.fontSize(8).fillColor('#cbd5e1').font('Helvetica').text('Simotwet Coffee Society © 2026 - Digital Ledger Record', { align: 'center' });
             doc.end();

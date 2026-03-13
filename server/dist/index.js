@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
-dotenv_1.default.config({ path: path_1.default.join(__dirname, '../../.env') });
+dotenv_1.default.config({ path: path_1.default.join(process.cwd(), '.env') });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -47,10 +47,12 @@ const uploadsPath = path_1.default.join(process.cwd(), 'uploads');
 app.use('/uploads', express_1.default.static(uploadsPath));
 // Production: Serve static client files
 if (process.env.NODE_ENV === 'production') {
-    const clientPath = path_1.default.join(__dirname, '../../client');
+    // In production, when running from dist/server/index.js,
+    // the client files are located in ../client
+    const clientPath = path_1.default.join(__dirname, '../client');
     app.use(express_1.default.static(clientPath));
-    // Catch-all for SPA routing
-    app.get('*', (req, res) => {
+    // Catch-all for SPA routing - Express 5 requires specific syntax for wildcards
+    app.get('{/*path}', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
             res.sendFile(path_1.default.join(clientPath, 'index.html'));
         }

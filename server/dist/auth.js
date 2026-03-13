@@ -106,6 +106,7 @@ router.post('/admin/register', middleware_1.requireAuth, middleware_1.requireAdm
                 return res.status(409).json({ error: 'User already exists' });
             return res.status(500).json({ error: 'Database error' });
         }
+        yield (0, db_1.logActivity)(req.user.id, 'ADMIN_REGISTER_USER', { target_user_id: authData.user.id, role: userRole });
         return res.status(201).json({ message: 'User created successfully', user: userData });
     }
     catch (err) {
@@ -301,6 +302,32 @@ router.get('/', middleware_1.requireAuth, middleware_1.requireAdmin, (req, res) 
         return res.json(users);
     }
     catch (err) {
+        return res.status(500).json({ error: 'Server error' });
+    }
+}));
+// Admin ONLY: Update user status or role
+router.put('/admin/users/:id', middleware_1.requireAuth, middleware_1.requireAdmin, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const { role, status } = req.body;
+        if (id === req.user.id) {
+            return res.status(400).json({ error: 'Cannot modify your own administrative status' });
+        }
+        const { data: userData, error } = yield db_1.supabase
+            .from('users')
+            .update({ role, status })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) {
+            console.error("User Update Error:", error);
+            return res.status(500).json({ error: 'Failed to update user' });
+        }
+        yield (0, db_1.logActivity)(req.user.id, 'ADMIN_UPDATE_USER', { target_user_id: id, updates: { role, status } });
+        return res.json({ message: 'User updated successfully', user: userData });
+    }
+    catch (err) {
+        console.error("User Update Route Error:", err);
         return res.status(500).json({ error: 'Server error' });
     }
 }));
