@@ -21,24 +21,19 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 
-app.use(cors({ 
+app.use(cors({
   origin: (origin, callback) => {
-    // In production, we want to allow requests from the same origin 
-    // or flexible based on environment configuration.
     if (!origin) return callback(null, true);
-    
+
     // Check if the origin matches any of the client URLs 
     if (process.env.CLIENT_URL) {
       const allowed = process.env.CLIENT_URL.split(',').map(u => u.trim());
       if (allowed.includes(origin)) return callback(null, true);
     }
-    
-    // Default permissive but credential-safe pattern for production.
-    // Allow any origin that isn't explicitly blocked if we're in production mode.
-    // In a security-critical env, you'd be more restrictive.
+
     return callback(null, true);
   },
-  credentials: true 
+  credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -59,20 +54,30 @@ app.use('/uploads', express.static(uploadsPath));
 
 // Production: Serve static client files
 if (process.env.NODE_ENV === 'production') {
-  // In production, when running from dist/server/index.js,
-  // the client files are located in ../client
-  const clientPath = path.resolve(process.cwd(), '../client');
+  // In production (compiled), __dirname is dist/server
+  // We want to reach dist/client
+  const clientPath = path.resolve(__dirname, '../client');
   console.log('Serving static files from:', clientPath);
-  app.use(express.static(clientPath));
-  
-  // Catch-all for SPA routing
-  app.get('{/*path}', (req: express.Request, res: express.Response) => {
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+
+  // Serve static assets first
+  app.use(express.static(clientPath, {
+    maxAge: '1d',
+    etag: true
+  }));
+
+  // Catch-all for SPA routing - fixed for Express 5 using middleware
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Only handle GET requests that aren't for API or uploads
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
       const indexPath = path.join(clientPath, 'index.html');
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).json({ error: 'Not Found' });
+      return res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error('Error sending index.html:', err);
+          res.status(500).send('Error loading application. Please ensure the build is complete.');
+        }
+      });
     }
+    next();
   });
 }
 
