@@ -56,8 +56,10 @@ export default function Auth() {
         national_id: nationalId,
         password
       });
-      setSuccessMsg('Registration successful. Please verify your phone number.');
-      setMode('verify');
+      setSuccessMsg('Registration successful. You can now log in with your credentials.');
+      setMode('login');
+      setPassword('');
+      setIdentifier(phone || email);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
@@ -184,7 +186,7 @@ export default function Auth() {
               </div>
             </div>
             <button type="submit" className="w-full bg-primary text-black py-3 rounded-lg font-bold hover:brightness-110 active:scale-[98%] transition-all mt-4 uppercase tracking-widest">
-              Register Identity
+              Create Account
             </button>
             <div className="text-center mt-6">
               <span className="text-muted-foreground text-sm">Have an account? Login </span>

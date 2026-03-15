@@ -6,6 +6,9 @@ import { useState } from 'react';
 export default function Dashboard() {
   const [_, setLocation] = useLocation();
   const [smsStatus, setSmsStatus] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [step, setStep] = useState<'none' | 'sending' | 'input'>('none');
 
   const { data: user, isLoading: userLoading, error: userError } = useQuery<any, any>({
     queryKey: ['me'],
@@ -33,12 +36,12 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     await axios.post('/auth/logout');
-    setLocation('/auth');
+    setLocation('/');
   }
 
   const generateReport = async (type: string) => {
     const res = await axios.get(`/reports?type=${type}&scope=individual`);
-    window.open(`http://localhost:5000${res.data.url}`, '_blank');
+    window.open(`${window.location.origin}${res.data.url}`, '_blank');
   };
 
   const requestSmsReport = async (type: string) => {
@@ -53,17 +56,100 @@ export default function Dashboard() {
     }
   }
 
+  const handleSendOtp = async () => {
+    setStep('sending');
+    try {
+      await axios.post('/auth/send-otp', { phone_number: user.phone_number });
+      setStep('input');
+    } catch (err: any) {
+      setSmsStatus(err.response?.data?.error || 'Failed to send OTP');
+      setStep('none');
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setVerifying(true);
+    try {
+      await axios.post('/auth/verify-otp', { phone_number: user.phone_number, code: otpCode });
+      setSmsStatus('Phone Verified Successfully!');
+      setStep('none');
+      // @ts-ignore
+      await axios.get('/auth/me'); // Trigger a refetch if needed or just use window.location.reload()
+      window.location.reload(); 
+    } catch (err: any) {
+      setSmsStatus(err.response?.data?.error || 'Verification failed');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-6">
         <div>
           <h1 className="text-3xl font-bold mb-1 tracking-tight">Welcome, {user.full_name}</h1>
-          <p className="text-muted-foreground">Phone Number: {user.phone_number} {user.is_phone_verified ? <span className="text-green-500 font-bold ml-2">✓ Verified</span> : <span className="text-yellow-500 font-bold ml-2">⚠️ Unverified</span>}</p>
+          <p className="text-muted-foreground flex items-center gap-2">
+            Phone: {user.phone_number} 
+            {user.is_phone_verified ? (
+              <span className="bg-green-500/10 text-green-500 px-3 py-0.5 rounded-full text-xs font-bold border border-green-500/20 flex items-center gap-1">
+                <span>✓</span> Verified
+              </span>
+            ) : (
+              <span className="bg-yellow-500/10 text-yellow-500 px-3 py-0.5 rounded-full text-xs font-bold border border-yellow-500/20 flex items-center gap-1">
+                <span>⚠️</span> Unverified
+              </span>
+            )}
+          </p>
         </div>
         <button onClick={handleLogout} className="px-5 py-2.5 bg-destructive/10 text-destructive rounded-full font-bold hover:bg-destructive hover:text-white transition-all">
           Logout
         </button>
       </div>
+
+      {!user.is_phone_verified && (
+        <div className="bg-primary/10 border border-primary/20 p-6 rounded-3xl animate-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="max-w-xl">
+              <h3 className="text-xl font-bold mb-2">Enable Deposit Notifications</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Link and verify your phone number to receive instant SMS notifications whenever a coffee deposit is recorded for your account. This ensures you have real-time tracking of your produce.
+              </p>
+            </div>
+            <div className="w-full md:w-auto shrink-0">
+              {step === 'none' && (
+                <button onClick={handleSendOtp} className="w-full md:w-auto px-8 py-3 bg-primary text-black font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all">
+                  Verify & Enable Now
+                </button>
+              )}
+              {step === 'sending' && (
+                <button disabled className="w-full md:w-auto px-8 py-3 bg-primary/50 text-black font-bold rounded-xl animate-pulse">
+                  Sending OTP...
+                </button>
+              )}
+              {step === 'input' && (
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    maxLength={6}
+                    placeholder="Enter OTP"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="w-32 p-3 rounded-xl bg-black/40 border border-white/20 focus:ring-2 ring-primary outline-none text-white text-center font-mono tracking-widest"
+                  />
+                  <button 
+                    onClick={handleVerifyOtp}
+                    disabled={verifying || otpCode.length < 6}
+                    className="px-6 py-3 bg-primary text-black font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {verifying ? '...' : 'Confirm'}
+                  </button>
+                  <button onClick={() => setStep('none')} className="p-3 text-muted-foreground hover:text-white">✕</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         <div className="flex justify-between items-center mb-4">
@@ -141,7 +227,7 @@ export default function Dashboard() {
                     <span className="text-sm text-muted-foreground ml-5">{new Date(d.created_at).toLocaleString()}</span>
                   </div>
                   {d.receipt_url ? (
-                    <a href={`http://localhost:5000${d.receipt_url}`} target="_blank" rel="noreferrer" className="mt-3 sm:mt-0 px-5 py-2 bg-primary/20 text-primary border border-primary/30 rounded-lg font-bold hover:bg-primary hover:text-primary-foreground transition-all text-sm group-hover:shadow-[0_0_15px_rgba(var(--primary),0.3)]">View Receipt PDF - Use ID no as password</a>
+                    <a href={`${window.location.origin}${d.receipt_url}`} target="_blank" rel="noreferrer" className="mt-3 sm:mt-0 px-5 py-2 bg-primary/20 text-primary border border-primary/30 rounded-lg font-bold hover:bg-primary hover:text-primary-foreground transition-all text-sm group-hover:shadow-[0_0_15px_rgba(var(--primary),0.3)]">View Receipt PDF</a>
                   ) : (
                     <span className="text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full text-xs font-bold sm:mt-0 mt-3 border border-yellow-500/20">Processing PDF...</span>
                   )}

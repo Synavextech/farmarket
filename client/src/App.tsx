@@ -6,11 +6,12 @@ import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Landing from './pages/Landing';
 import AboutUs from './pages/AboutUs';
+import Footer from './components/Footer';
 
 import axios from 'axios';
 
 // Globals
-axios.defaults.baseURL = 'http://localhost:5000/api';
+axios.defaults.baseURL = '/api';
 axios.defaults.withCredentials = true;
 
 const queryClient = new QueryClient();
@@ -42,7 +43,7 @@ function AppContent() {
     queryFn: async () => {
       try {
         const res = await axios.get('/auth/me');
-        return res.data.user;
+        return res.data?.user || null;
       } catch (err) {
         return null;
       }
@@ -54,7 +55,8 @@ function AppContent() {
   const isAdmin = user?.role === 'admin' || user?.role === 'operator';
 
   return (
-    <div className={`min-h-screen bg-background text-foreground flex flex-col items-center ${isPublicPage ? '' : 'p-4'}`}>
+    <div className={`min-h-screen bg-background text-foreground flex flex-col items-center w-full`}>
+      <div className={`flex flex-col items-center w-full flex-1 ${isPublicPage ? '' : 'p-4'}`}>
       {!isPublicPage && (
         <nav className="sticky top-4 z-50 w-full max-w-lg glass-effect rounded-full px-6 py-3 flex justify-around items-center mb-8">
           <Link href="/" className="hover:text-primary transition-colors duration-200 text-sm font-semibold">
@@ -84,14 +86,31 @@ function AppContent() {
         <Switch>
           <Route path="/" component={Landing} />
           <Route path="/about" component={AboutUs} />
-          <Route path="/dashboard" component={Dashboard} />
-          <Route path="/auth" component={Auth} />
-          <Route path="/admin" component={Admin} />
+          <Route path="/auth">
+            {user ? (isAdmin ? <Link href="/admin" /> : <Link href="/dashboard" />) : <Auth />}
+          </Route>
+          
+          <Route path="/dashboard">
+            {!user ? <div className="p-20 text-center animate-pulse">Redirecting to Auth...</div> : <Dashboard />}
+          </Route>
+          
+          <Route path="/admin">
+            {!user || !isAdmin ? (
+              <div className="p-20 text-center">
+                <h2 className="text-2xl font-bold text-red-500 mb-4">Access Denied</h2>
+                <p className="mb-4">You do not have administrative privileges.</p>
+                <Link href="/" className="text-primary underline">Return Home</Link>
+              </div>
+            ) : <Admin />}
+          </Route>
+
           <Route>
-            <div className="text-center">404 - Not Found</div>
+            <div className="text-center py-20">404 - Not Found</div>
           </Route>
         </Switch>
       </main>
+      </div>
+      <Footer />
     </div>
   );
 }

@@ -78,7 +78,7 @@ export default function Admin() {
 
   const handleLogout = async () => {
     await axios.post('/auth/logout');
-    setLocation('/auth');
+    setLocation('/');
   }
 
   return (
@@ -278,7 +278,7 @@ export default function Admin() {
                       key={time}
                       onClick={async () => {
                         const res = await axios.get(`/reports?type=${time}&scope=company`);
-                        window.open(`http://localhost:5000${res.data.url}`, '_blank');
+                        window.open(`${window.location.origin}${res.data.url}`, '_blank');
                       }}
                       className="p-4 glass-effect rounded-2xl hover:bg-primary/20 transition-all font-bold text-sm uppercase tracking-wider"
                     >
@@ -309,7 +309,7 @@ export default function Admin() {
                           const uid = (document.getElementById('report_user_id') as HTMLSelectElement).value;
                           if (!uid) return alert('Please select a member first');
                           const res = await axios.get(`/reports?type=${time}&scope=individual&user_id=${uid}`);
-                          window.open(`http://localhost:5000${res.data.url}`, '_blank');
+                          window.open(`${window.location.origin}${res.data.url}`, '_blank');
                         }}
                         className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-xs font-bold uppercase tracking-tighter"
                       >

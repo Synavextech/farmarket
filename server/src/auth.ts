@@ -53,7 +53,7 @@ router.post('/register', async (req: Request, res: Response): Promise<any> => {
       return res.status(500).json({ error: `Database error: ${error.message}` });
     }
 
-    return res.status(201).json({ message: 'User registered successfully. Please verify OTP.', user: userData });
+    return res.status(201).json({ message: 'User registered successfully. You can now log in and complete your profile.', user: userData });
   } catch (err) {
     console.error("Registration Error:", err);
     return res.status(500).json({ error: 'Server error' });
@@ -145,6 +145,10 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
     
     // Fallback: If they haven't set up Supabase properly but exist in users, fallback to local hash check
     if (signInError) {
+        if (!user.password_hash) {
+            console.error("Login Fallback Error: User has no password_hash in DB.");
+            return res.status(401).json({ error: 'Auth system unavailable and no local fallback hash.' });
+        }
         const isValid = await bcrypt.compare(password, user.password_hash);
         if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });
     }

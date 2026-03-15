@@ -3,18 +3,13 @@ module.exports = {
     {
       name: 'simotwet-coffee-backend',
       script: './dist/server/index.js',
-      instances: 'max', // Cluster mode
-      exec_mode: 'cluster',
+      cwd: './',
+      instances: 1,
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
       },
-      env_development: {
-        NODE_ENV: 'development',
-      },
-      // Logs config
       log_date_format: 'YYYY-MM-DD HH:mm Z',
-      error_file: './logs/error.log',
-      out_file: './logs/out.log',
       merge_logs: true
     }
   ]
